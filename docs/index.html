@@ -5,49 +5,23 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="https://lacmta.github.io/design-system/dist/css/uswds.min.css" type="text/css">
+
+	<!-- Load Leaflet from CDN -->
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css" crossorigin="" />
+	<script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js" crossorigin=""></script>
+
+	<!-- Load Esri Leaflet from CDN -->
+	<script src="https://unpkg.com/esri-leaflet@^3.0.8/dist/esri-leaflet.js"></script>
+	<script src="https://unpkg.com/esri-leaflet-vector@^3.1.0/dist/esri-leaflet-vector.js"></script>
+
 	<link rel="stylesheet" href="css/site.css" type="text/css">
 
-	<script src="https://lacmta.github.io/design-system/dist/js/uswds-init.min.js"></script>
-	<title>11ty</title>
+	<title>Metro Art Bus Tracker</title>
+
 </head>
 <body>
-	<header class="usa-header usa-header--basic">
-	<div class="usa-nav-container">
-	  <div class="usa-navbar">
-		<div class="usa-logo" id="basic-logo">
-		  <em class="usa-logo__text">
-			<a href="https://www.metro.net" title="Metro.net">
-			  Metro
-			</a>
-		  </em>
-		</div>
-	  </div>
-	</div>
-  </header>
-  
 	
-<div class="usa-section">
-	<div class="grid-container">
-	  <div class="grid-row grid-gap">
-		<main class="
-			usa-layout-docs__main
-			desktop:grid-col-12
-			usa-prose usa-layout-docs
-		  " id="main-content">
-		  <h1>11ty Web Template</h1>
-
-		  <p class="usa-intro">
-			Text here.
-		  </p>
-
-		</main>
-	  </div>
-	</div>
-  </div>
-	</main>
-
-	<script src="https://lacmta.github.io/design-system/dist/js/uswds.min.js"></script>
+<div id="map"></div>
 	<script src="js/site.js"></script>
 </body>
 </html>
