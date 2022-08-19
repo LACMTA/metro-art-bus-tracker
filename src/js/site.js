@@ -16,6 +16,7 @@ L.esri.tiledMapLayer({url: rasterBaseMap}).addTo(map);
 
 const url = 'https://api.metro.net/vehicle_positions/bus?output_format=json';
 const art_bus_ids = ['3944', '4111', '5621'];
+const api_url = 'https://api.metro.net/agencies/lametro/';
 
 let firstLoad = true;
 
@@ -28,7 +29,7 @@ function load_buses() {
 			art_buses.forEach(bus => { display_art_bus_markers(bus); });
 
 			// Fit map to bounds on first load
-			if (firstLoad) {
+			if (firstLoad && layerGroup.getLayers().length > 0) {
 				map.fitBounds(layerGroup.getBounds());
 				firstLoad = false;
 			}
@@ -36,6 +37,25 @@ function load_buses() {
 	});
 
 	setTimeout(load_buses, 5000);
+}
+
+// co-pilot code :) 
+function get_bus_predictions(bus) {
+	// let predictions_url = api_url + 'vehicles/' + bus.id + '/predictions';
+	let predictions_url = api_url + 'stop_times/bus/' + bus.id;
+	fetch(predictions_url).then(response => {
+		const jsonPromise = response.json();
+		jsonPromise.then( data => { 
+			let predictions = data.items;
+			let prediction_text = '';
+			predictions.forEach(prediction => {
+				prediction_text += prediction.directionName + ': ' + prediction.minutes + ' minutes<br>';
+			} );
+			let bus_marker_popup = L.popup().setContent(prediction_text);
+			console.log(bus_marker_popup)
+			bus_marker.bindPopup(bus_marker_popup);
+		} );
+	} );
 }
 
 function clear_markers() {
@@ -54,15 +74,21 @@ function identify_art_buses(data) {
 let layerGroup = L.featureGroup().addTo(map);
 
 function display_art_bus_markers(bus) {
+	console.log(bus.vehicle)
 	if (bus.vehicle.trip != null) {
 		let bus_marker = L.marker(L.latLng(bus.vehicle.position.latitude, bus.vehicle.position.longitude), {icon: icon});
 		
+		// Todo: add bus predictions
+		get_bus_predictions(bus)
 		// Currently a hack because the routeId is not necessarily the actual route number the vehicle is running.
 		// To get the actual route number we'd have to use the tripId and reference the GTFS.
 		let bus_marker_popup = L.popup().setContent('Line ' + bus.vehicle.trip.routeId.split('-')[0]);
 
+		
+
 		bus_marker.bindPopup(bus_marker_popup);
 		layerGroup.addLayer(bus_marker);
+		
 	}
 }
 
