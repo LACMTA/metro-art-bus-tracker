@@ -1,95 +1,52 @@
-const rasterBaseMap = 'https://tiles.arcgis.com/tiles/TNoJFjk1LsD45Juj/arcgis/rest/services/Map4_NoTransit/MapServer';
+import * as ArtBusData from './data.js';
+import * as Map from './map.js';
 
-const map = L.map("map", {
-    maxZoom: 16,
-	minZoom: 10
-}).setView([33.97, -118.365], 11);
+ArtBusData.load();
+Map.create('map');
 
-// Art Bus iconSize: [72, 20]
-const icon = L.icon({
-    iconUrl: "images/bus.png",
-    iconSize: [36, 36]
-    });
+function temp() {
+	let result = fetch(vehicle_positions_endpoint)
+		.then(response => response.json())
+		.then(data =>  {
+			// for each active bus we have trip data for, gather all information needed for display
+			active_art_buses.forEach(bus => {
+				bus_data_array = [];
 
-L.esri.tiledMapLayer({url: rasterBaseMap}).addTo(map);
+				// get route and destination from the GTFS stop_times
+				bus_data_array.push(fetch(stop_times_endpoint + bus.vehicle.trip.tripId));
 
+				Promise.all(art_buses_with_trips)
+				.then(responses => {
+					return Promise.all(responses.map(response => response.json()));
+				})
+				.then(data => {
+					data.forEach(bus_trips => {
+						bus_trips.filter(x => x.stop_id == bus.vehicle.trip.stopId);
+					});
+				})
+				.catch(error => console.log(error));
+			});
 
-const url = 'https://api.metro.net/vehicle_positions/bus?output_format=json';
-const art_bus_ids = ['3944', '4111', '5621'];
-const api_url = 'https://api.metro.net/agencies/lametro/';
-
-let firstLoad = true;
-
-function load_buses() {
-	fetch(url).then(response => {
-		const jsonPromise = response.json();
-		jsonPromise.then( data => { 
-			let art_buses = identify_art_buses(data);
-			clear_markers();
-			art_buses.forEach(bus => { display_art_bus_markers(bus); });
+			// clear_markers();
+			// active_art_buses.forEach(active_art_bus => { 
+			// 	add_marker(active_art_bus); 
+			// });
 
 			// Fit map to bounds on first load
-			if (firstLoad && layerGroup.getLayers().length > 0) {
-				map.fitBounds(layerGroup.getBounds());
-				firstLoad = false;
-			}
+			// if (firstLoadFitBounds && layerGroup.getLayers().length > 0) {
+			// 	map.fitBounds(layerGroup.getBounds());
+			// 	firstLoadFitBounds = false;
+			// }
+		});
+}
+
+function get_route_code(trip_id, stop_id) {
+	fetch(api_url + stop_times_endpoint + trip_id).then(response => {
+		const jsonPromise = response.json();
+		jsonPromise.then( stop_time => {
+			let upcoming_stop = stop_time.filter(stop => stop.id == stop_id);
+			return upcoming_stop.route_code;
 		});
 	});
-
-	setTimeout(load_buses, 5000);
 }
 
-// co-pilot code :) 
-function get_bus_predictions(bus) {
-	// let predictions_url = api_url + 'vehicles/' + bus.id + '/predictions';
-	let predictions_url = api_url + 'stop_times/bus/' + bus.id;
-	fetch(predictions_url).then(response => {
-		const jsonPromise = response.json();
-		jsonPromise.then( data => { 
-			let predictions = data.items;
-			let prediction_text = '';
-			predictions.forEach(prediction => {
-				prediction_text += prediction.directionName + ': ' + prediction.minutes + ' minutes<br>';
-			} );
-			let bus_marker_popup = L.popup().setContent(prediction_text);
-			console.log(bus_marker_popup)
-			bus_marker.bindPopup(bus_marker_popup);
-		} );
-	} );
-}
-
-function clear_markers() {
-	map.eachLayer(function(layer) {
-		if (layer.options.icon != null) {
-			map.removeLayer(layer);
-		}
-	});
-}
-
-function identify_art_buses(data) {
-	let art_buses = data.entity.filter(bus => art_bus_ids.includes(bus.id));
-	return art_buses;
-}
-
-let layerGroup = L.featureGroup().addTo(map);
-
-function display_art_bus_markers(bus) {
-	console.log(bus.vehicle)
-	if (bus.vehicle.trip != null) {
-		let bus_marker = L.marker(L.latLng(bus.vehicle.position.latitude, bus.vehicle.position.longitude), {icon: icon});
-		
-		// Todo: add bus predictions
-		get_bus_predictions(bus)
-		// Currently a hack because the routeId is not necessarily the actual route number the vehicle is running.
-		// To get the actual route number we'd have to use the tripId and reference the GTFS.
-		let bus_marker_popup = L.popup().setContent('Line ' + bus.vehicle.trip.routeId.split('-')[0]);
-
-		
-
-		bus_marker.bindPopup(bus_marker_popup);
-		layerGroup.addLayer(bus_marker);
-		
-	}
-}
-
-load_buses();

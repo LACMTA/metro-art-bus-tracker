@@ -1,6 +1,3 @@
----
-siteTitle: "Metro Art Bus Tracker"
----
 
 <!DOCTYPE html>
 <html lang="en">
@@ -17,13 +14,14 @@ siteTitle: "Metro Art Bus Tracker"
 	<script src="https://unpkg.com/esri-leaflet@^3.0.8/dist/esri-leaflet.js"></script>
 	<script src="https://unpkg.com/esri-leaflet-vector@^3.1.0/dist/esri-leaflet-vector.js"></script>
 
-	<link rel="stylesheet" href="{{ '/css/' | append: css | url }}" type="text/css">
+	<link rel="stylesheet" href="/metro-art-bus-tracker/css/site.css" type="text/css">
 
-	<title>{{ siteTitle }}</title>
+	<title>Metro Art Bus Tracker</title>
 
 </head>
 <body>
-	{{ content }}
-	<script src="{{ '/js/' | append: js | url }}" type="module"></script>
+	
+<div id="status"></div>
+	<script src="/metro-art-bus-tracker/js/status.js" type="module"></script>
 </body>
 </html>
