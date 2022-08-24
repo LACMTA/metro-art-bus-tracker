@@ -2,7 +2,7 @@ import * as ArtBusData from './data.js';
 import * as Map from './map.js';
 
 ArtBusData.load();
-Map.create('map');
+// Map.create('map');
 
 function temp() {
 	let result = fetch(vehicle_positions_endpoint)

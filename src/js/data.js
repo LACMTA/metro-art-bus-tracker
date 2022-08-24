@@ -1,15 +1,19 @@
+import * as Map from './map.js';
+
 const API_URL = 'https://api.metro.net/';
 const VEHICLE_POSITIONS_ENDPOINT = API_URL + 'vehicle_positions/bus?output_format=json';
 const TRIP_UPDATES_ENDPOINT = API_URL + 'trip_updates/bus?output_format=json';
 const STOP_TIMES_ENDPOINT = API_URL + 'bus/stop_times/';
 const STOPS_ENDPOINT = API_URL + 'bus/stops/';
 
-const artBusIds = ['5812', '5813', '5822', '5823']; // ['3944', '4111', '5621'];
+const artBusIds = ['3944', '4111', '5621'];
 
 let busMapData = {
     hasTrips: [],
     noTrips: []
 };
+
+Map.create('map');
 
 function loadData(status = false) {
     let statusMessageSection;
@@ -179,12 +183,20 @@ function loadData(status = false) {
                                     let stopName = dataItem[0].stop_name;
         
                                     busMapData.hasTrips = busMapData.hasTrips.map(elem => {
-                                        if (elem.prediction.stopId == stopId) {
+                                        if (elem.hasOwnProperty('prediction') && elem.prediction.stopId == stopId) {
                                             elem.stopName = stopName;
                                         }
                                         return elem;
                                     });
                                 }
+                            });
+                        }).then(data => {
+                            /**************************/
+                            /*   Add markers to map   */
+                            /**************************/
+
+                            busMapData.hasTrips.forEach(elem => {
+                                Map.addMarker(elem);
                             });
                         });
                     });
@@ -222,6 +234,14 @@ function loadData(status = false) {
                                     return elem;
                                 });
                             }
+                        });
+                    }).then(data => {
+                        /**************************/
+                        /*   Add markers to map   */
+                        /**************************/
+
+                        busMapData.hasTrips.forEach(elem => {
+                            Map.addMarker(elem);
                         });
                     });
                 }
@@ -338,10 +358,7 @@ function loadData(status = false) {
             //     // busInfoArray.push(busInfo);
             // });
 		}
-	})
-    .then(data => {
-        console.log(busMapData);
-    }).catch(error => {
+	}).catch(error => {
         console.log(error);
         if (status) {
             statusMessageSection.innerText = 'Error: ' + error;

@@ -1,5 +1,5 @@
 const rasterBaseMap = 'https://tiles.arcgis.com/tiles/TNoJFjk1LsD45Juj/arcgis/rest/services/Map4_NoTransit/MapServer';
-const art_bus_icon = 'metro_art_bus_icon.png';
+const art_bus_icon = 'bus.png';
 
 let firstLoad = true;
 let layerGroup;
@@ -8,7 +8,7 @@ let map;
 // Art Bus iconSize: [72, 20]
 const icon = L.icon({
     iconUrl: "images/" + art_bus_icon,
-    iconSize: [200, 200]
+    iconSize: [50, 50]
     });
 
 function createMap(id) {
@@ -22,19 +22,41 @@ function createMap(id) {
 }
 
 function addBusMarker(bus) {
-    // GET ROUTE
-    let route = get_route_code(bus.vehicle.trip.tripId, bus.vehicle.stopId);
+    console.log("Adding marker for:");
+    console.log(bus);
+    
+    let route = bus.routeCode;
+    let stop = bus.stopName;
+    let position = bus.position.vehicle.position;
+    let statusMessage = '';
 
-    // GET ARRIVAL TIME
-    let marker_text = get_bus_predictions(bus);
+    let message = '';
 
-    // GET STOP NAME
+    if (bus.hasOwnProperty('prediction') && bus.prediction.hasOwnProperty('arrival')) {
+        let timestamp = new Date(bus.prediction.arrival.time * 1000);
+        statusMessage = ' is arriving at ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});;
+    } else if (bus.hasOwnProperty('prediction') && bus.prediction.hasOwnProperty('departure')) {
+        let timestamp = new Date(bus.prediction.departure.time * 1000);
+        statusMessage = ' is departing ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});;
+    } else {
+        let timestamp = new Date(bus.position.vehicle.timestamp * 1000);
+        statusMessage = ' is stopped at ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});;
+    }
 
-    let bus_marker = L.marker(L.latLng(position.latitude, position.longitude), {icon: icon});
-    let bus_marker_popup = L.popup().setContent(marker_text);
+    message = "Line " + route + statusMessage;
 
-    bus_marker.bindPopup(bus_marker_popup);
-    layerGroup.addLayer(bus_marker);
+    let marker = L.marker(L.latLng(position.latitude, position.longitude), {icon: icon});
+    let marker_popup = L.popup().setContent(message);
+
+    marker.bindPopup(marker_popup);
+    layerGroup.addLayer(marker);
+
+    if (layerGroup.getLayers().length > 0) {
+       	map.fitBounds(layerGroup.getBounds());
+        // let zoom = map.getZoom();
+        // console.log(zoom);
+        // map.setZoom(zoom - 1);
+    }
 }
 
 function clearMarkers(map) {
@@ -46,5 +68,6 @@ function clearMarkers(map) {
 }
 
 export {
-    createMap as create
+    createMap as create,
+    addBusMarker as addMarker
 };
