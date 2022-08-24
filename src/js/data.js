@@ -4,7 +4,7 @@ const TRIP_UPDATES_ENDPOINT = API_URL + 'trip_updates/bus?output_format=json';
 const STOP_TIMES_ENDPOINT = API_URL + 'bus/stop_times/';
 const STOPS_ENDPOINT = API_URL + 'bus/stops/';
 
-const artBusIds = ['8811', '9588', '5817']; // ['3944', '4111', '5621'];
+const artBusIds = ['5812', '5813', '5822', '5823']; // ['3944', '4111', '5621'];
 
 let busMapData = {
     hasTrips: [],
@@ -83,62 +83,152 @@ function loadData(status = false) {
                 }
             });
 
-			/*******************************/
-            /*   MATCH TRIP UPDATES DATA   */
-            /*******************************/
+            // Only continue if there are buses that have trips
+            if (busMapData.hasTrips.length > 0) {
 
-            busMapData.hasTrips = busMapData.hasTrips.map(elem => {
-                if (!elem.stopped) {
-                    let tripUpdate = tripUpdatesData.entity.filter(trip => trip.id.includes(elem.position.vehicle.trip.tripId));
-                    let prediction = tripUpdate[0].tripUpdate.stopTimeUpdate.filter(stop => stop.stopSequence == elem.position.vehicle.currentStopSequence);
-                    elem.prediction = prediction[0];
-                }
-                return elem;
-            });
+                /*******************************/
+                /*   MATCH TRIP UPDATES DATA   */
+                /*******************************/
 
-			/******************************************/
-            /*   CREATE GTFS-STATIC DATA FETCH CALLS  */
-            /******************************************/
-
-            let stoppedFetchCalls = [];
-            let movingFetchCalls = [];
-
-            busMapData.hasTrips.forEach(elem => {
-                if (elem.stopped) {
-                    stoppedFetchCalls.push(fetch(STOP_TIMES_ENDPOINT + elem.position.vehicle.trip.tripId));
-                    stoppedFetchCalls.push(fetch(STOPS_ENDPOINT + elem.position.vehicle.stopId));
-                } else {
-                    movingFetchCalls.push(fetch(STOP_TIMES_ENDPOINT + elem.position.vehicle.trip.tripId));
-                    movingFetchCalls.push(fetch(STOPS_ENDPOINT + elem.prediction.stopId));
-                }                
-            });
-
-			/********************************************/
-            /*   HANDLE FETCH CALLS FOR STOPPED BUSES   */
-            /********************************************/
-
-            Promise.all(stoppedFetchCalls)
-            .then(responses => Promise.all(responses.map(response => response.json())))
-            .then(data => {
-                data.forEach((dataItem, i) => {
-                    if (i % 2 == 0) {
-                        // STOP_TIMES - get route_code
-                        let tripId = dataItem[0].trip_id;
-
-                        busMapData.hasTrips = busMapData.hasTrips.map(elem => {
-                            if (elem.position.vehicle.trip.tripId == tripId) {
-                                let stopSequence = elem.position.vehicle.currentStopSequence;
-                                let matchingStopTime = dataItem.filter(elem2 => elem2.stop_sequence == stopSequence);
-                                let routeCode = matchingStopTime[0].route_code;
-                                elem.routeCode = routeCode;
-                            }
-                            return elem;
-                        });
-                    } else {
-                        // STOPS
+                busMapData.hasTrips = busMapData.hasTrips.map(elem => {
+                    if (!elem.stopped) {
+                        let tripUpdate = tripUpdatesData.entity.filter(trip => trip.id.includes(elem.position.vehicle.trip.tripId));
+                        let prediction = tripUpdate[0].tripUpdate.stopTimeUpdate.filter(stop => stop.stopSequence == elem.position.vehicle.currentStopSequence);
+                        elem.prediction = prediction[0];
                     }
+                    return elem;
                 });
-            });
+    
+                /******************************************/
+                /*   CREATE GTFS-STATIC DATA FETCH CALLS  */
+                /******************************************/
+    
+                let stoppedFetchCalls = [];
+                let movingFetchCalls = [];
+    
+                busMapData.hasTrips.forEach(elem => {
+                    if (elem.stopped) {
+                        stoppedFetchCalls.push(fetch(STOP_TIMES_ENDPOINT + elem.position.vehicle.trip.tripId));
+                        stoppedFetchCalls.push(fetch(STOPS_ENDPOINT + elem.position.vehicle.stopId));
+                    } else {
+                        movingFetchCalls.push(fetch(STOP_TIMES_ENDPOINT + elem.position.vehicle.trip.tripId));
+                        movingFetchCalls.push(fetch(STOPS_ENDPOINT + elem.prediction.stopId));
+                    }                
+                });
+    
+                /********************************************/
+                /*   HANDLE FETCH CALLS FOR STOPPED BUSES   */
+                /********************************************/
+    
+                if (stoppedFetchCalls.length > 0) {
+                    Promise.all(stoppedFetchCalls)
+                    .then(responses => Promise.all(responses.map(response => response.json())))
+                    .then(data => {
+                        data.forEach((dataItem, i) => {
+                            if (i % 2 == 0) {
+                                // STOP_TIMES - get route_code
+                                let tripId = dataItem[0].trip_id;
+        
+                                busMapData.hasTrips = busMapData.hasTrips.map(elem => {
+                                    if (elem.position.vehicle.trip.tripId == tripId) {
+                                        let stopSequence = elem.position.vehicle.currentStopSequence;
+                                        let matchingStopTime = dataItem.filter(elem2 => elem2.stop_sequence == stopSequence);
+                                        let routeCode = matchingStopTime[0].route_code;
+                                        elem.routeCode = routeCode;
+                                    }
+                                    return elem;
+                                });
+                            } else {
+                                // STOPS - get stop_name
+                                let stopId = dataItem[0].stop_id;
+                                let stopName = dataItem[0].stop_name;
+        
+                                busMapData.hasTrips = busMapData.hasTrips.map(elem => {
+                                    if (elem.position.vehicle.stopId == stopId) {
+                                        elem.stopName = stopName;
+                                    }
+                                    return elem;
+                                });
+                            }
+                        });
+        
+                        /*******************************************/
+                        /*   HANDLE FETCH CALLS FOR MOVING BUSES   */
+                        /*******************************************/
+        
+                        Promise.all(movingFetchCalls)
+                        .then(responses => Promise.all(responses.map(response => response.json())))
+                        .then(data => {
+                            data.forEach((dataItem, i) => {
+                                if (i % 2 == 0) {
+                                    // STOP_TIMES - get route_code
+                                    let tripId = dataItem[0].trip_id;
+        
+                                    busMapData.hasTrips = busMapData.hasTrips.map(elem => {
+                                        if (elem.position.vehicle.trip.tripId == tripId) {
+                                            let stopSequence = elem.prediction.stopSequence;
+                                            let matchingStopTime = dataItem.filter(elem2 => elem2.stop_sequence == stopSequence);
+                                            let routeCode = matchingStopTime[0].route_code;
+                                            elem.routeCode = routeCode;
+                                        }
+                                        return elem;
+                                    });
+                                } else {
+                                    // STOPS - get stop_name
+                                    let stopId = dataItem[0].stop_id;
+                                    let stopName = dataItem[0].stop_name;
+        
+                                    busMapData.hasTrips = busMapData.hasTrips.map(elem => {
+                                        if (elem.prediction.stopId == stopId) {
+                                            elem.stopName = stopName;
+                                        }
+                                        return elem;
+                                    });
+                                }
+                            });
+                        });
+                    });
+                } else if (movingFetchCalls.length > 0) {
+                    /*******************************************/
+                    /*   HANDLE FETCH CALLS FOR MOVING BUSES   */
+                    /*******************************************/
+    
+                    Promise.all(movingFetchCalls)
+                    .then(responses => Promise.all(responses.map(response => response.json())))
+                    .then(data => {
+                        data.forEach((dataItem, i) => {
+                            if (i % 2 == 0) {
+                                // STOP_TIMES - get route_code
+                                let tripId = dataItem[0].trip_id;
+    
+                                busMapData.hasTrips = busMapData.hasTrips.map(elem => {
+                                    if (elem.position.vehicle.trip.tripId == tripId) {
+                                        let stopSequence = elem.prediction.stopSequence;
+                                        let matchingStopTime = dataItem.filter(elem2 => elem2.stop_sequence == stopSequence);
+                                        let routeCode = matchingStopTime[0].route_code;
+                                        elem.routeCode = routeCode;
+                                    }
+                                    return elem;
+                                });
+                            } else {
+                                // STOPS - get stop_name
+                                let stopId = dataItem[0].stop_id;
+                                let stopName = dataItem[0].stop_name;
+    
+                                busMapData.hasTrips = busMapData.hasTrips.map(elem => {
+                                    if (elem.hasOwnProperty('prediction') && elem.prediction.stopId == stopId) {
+                                        elem.stopName = stopName;
+                                    }
+                                    return elem;
+                                });
+                            }
+                        });
+                    });
+                }
+                    
+            } else {
+                console.log('No calls made because no buses with trips were found.');
+            }
 
 			// // remove buses where there is no trip data
 			// let artBusPositionsWithTrips = artBusPositions.filter(bus => bus.vehicle.trip != null);
@@ -248,7 +338,10 @@ function loadData(status = false) {
             //     // busInfoArray.push(busInfo);
             // });
 		}
-	}).catch(error => {
+	})
+    .then(data => {
+        console.log(busMapData);
+    }).catch(error => {
         console.log(error);
         if (status) {
             statusMessageSection.innerText = 'Error: ' + error;
