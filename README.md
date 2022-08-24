@@ -1,6 +1,29 @@
-# 11ty-web-template
+# metro-art-bus-tracker
 
-Use this template for quick prototypes and simple websites.  This template uses the [Eleventy (11ty) static site generator](https://www.11ty.dev/).
+This website was built using our [11ty-web-template](https://github.com/LACMTA/11ty-web-template) repo and it shows the locations of the 3 [Metro Art Buses](https://art.metro.net/artworks/metroartbus/) in real time.
+
+Icons will appear on the map if the `vehicle_id` appears in the VehiclePositions feed AND it has a `trip_id` assigned to it. Clicking the icon will show a popup with additional information about the trip that vehicle is running.
+
+Buses that satisfy this condition will be in one of two states: stopped (`current_status` is `STOPPED_AT`) or moving (`current_status` is `INCOMING_AT` or `IN_TRANSIT_TO`). See the [GTFS Realtime Reference](https://gtfs.org/realtime/reference/) for more information.
+
+If the vehicle is stopped, the popup will show the stop name and the timestamp.
+
+If the vehicle is moving, the popup will show the bus' next stop and the predicted arrival time (or departure time if the arrival time is not available).
+
+Technology:
+
+- 11ty
+- Leaflet
+- Metro basemap via ESRI
+
+Data:
+
+- GTFS-realtime APIs from Swiftly via [api.metro.net](https://api.metro.net)
+  - VehiclePositions endpoint
+  - TripUpdates endpoint
+- GTFS-static APIs from Metro's [gtfs_bus GitLab repo](https://gitlab.com/LACMTA/gtfs_bus) via [api.metro.net](https://api.metro.net)
+  - stop_times endpoint
+  - stops endpoint
 
 ## Quickstart
 
@@ -8,81 +31,15 @@ Use `node --version` to verify you're running Node 12 or newer.
 
 Download this repository.
 
-Run this command to build serve the site:
+Use `npm run start` to build & serve the site.
 
-``` bash
-npm run start
-```
+❗❗❗ If this is your first time running 11ty, the `@11ty/eleventy` package will be installed. Type `y` when prompted to proceed. You might need to run `npm install`.
 
-❗❗❗ If this is your first time, the `@11ty/eleventy` package will be installed. Type `y` when prompted to proceed.
+View the site locally at `http://localhost:8080/`.
 
-Open `http://localhost:8080/` to view the site.
+### Config for GitHub Pages
 
-### Config
+If you plan to run a live version of this site on GitHub Pages:
 
-Update the following files for each new project:
-
-- `.eleventy.js` - update `pathPrefix`
-- `src/_includes/default.liquid` - update `siteTitle`
-
-## Publish Using GitHub Pages
-
-### 11ty Config
-
-The `.eleventy.js` config file needs the following two settings for GitHub Pages publishing:
-
-1. Change the output directory from the default `_site/` to the directory used by GitHub Pages: `docs/`.
-2. Add a path prefix with the repository name because 11ty builds links using the root as the default, but GitHub Pages without a custom domain follow the format `account.github.io/repository-name/`.
-
-Example:
-
-``` js
-module.exports = function(eleventyConfig) {
-    return {
-        pathPrefix: "/11ty-website-example/",
-        dir: {
-            output: "docs"
-        }
-    }
-}
-```
-
-### 11ty Ignored Files
-
-The `.eleventyignore` works like other ignore files.  The `README.md` file is added here so that 11ty does not try to build the README into a page.
-
-## Notes
-
-### NPM Setup
-
-This repository's `package.json` file was initialized using `npm init -y`.
-
-11ty does not automatically clean the output folder before building so any deleted source files will need to be deleted from the output folder.  One easy way to take care of this is to just delete the entire output folder before building. This can be done using a shortcut script built into the `package.json` file.
-
-Here are some shortcut scripts that have already been added in this repo:
-
-``` js
-"build": "npx @11ty/eleventy",
-"serve": "npx @11ty/eleventy --serve"
-```
-
-Scripts can be chained together like this:
-
-``` js
-"clean": "rm -rf docs",
-"build": "npx @11ty/eleventy",
-"clean:build": "npm run clean && npm run build",
-"start": "npm run clean && npm run build && npm run serve"
-```
-
-Use the following command to get started:
-
-``` bash
-npm run start
-```
-
-### Liquid Templates
-
-#### Using Includes
-
-To use includes without quotes, they need to be enabled via `dynamicPartials: false` in the Liquid options. Front matter in the include file will not be evaluated. By default, includes must be formatted this way: `{% include 'user' %}`, which looks for `_includes/user.liquid`.
+- Update `pathPrefix` in `.eleventy.js` to your repo name.
+- Make sure GitHub Pages is set to publish the `docs/` folder.
