@@ -13,13 +13,13 @@ let busMapData = {
     noTrips: []
 };
 
-Map.create('map');
-
 function loadData(status = false) {
     let statusMessageSection;
 
     if (status) {
         statusMessageSection = document.querySelector('#status');
+    } else {
+        Map.create('map');
     }
 
 	Promise.all([
@@ -87,6 +87,61 @@ function loadData(status = false) {
                 }
             });
 
+            /**********************************/
+            /*   CREATE STATUS PAGE CONTENT   */
+            /**********************************/
+            if (status) {
+                let positionsStatusDiv = document.createElement('div');
+				let tripStatusDiv = document.createElement('div');
+
+                let totalBuses = busMapData.hasTrips.length + busMapData.noTrips.length;
+                let busesWithTrips = busMapData.hasTrips.length;
+
+                if (totalBuses == 0) {
+                    positionsStatusDiv.innerText = "No buses running";
+                } else if (totalBuses == 3) {
+                    positionsStatusDiv.innerText = "All buses running";
+                } else {
+                    positionsStatusDiv.innerText = "Some buses running (" + totalBuses + ")";
+                    
+                    let list = document.createElement('ul');
+                    busMapData.hasTrips.forEach(bus => {
+                        let item = document.createElement('li');
+                        item.classList.add('bus-running');
+                        item.innerText += bus.position.id;
+                        list.appendChild(item);
+                    });
+                    busMapData.noTrips.forEach(bus => {
+                        let item = document.createElement('li');
+                        item.classList.add('bus-running');
+                        item.innerText += bus.position.id;
+                        list.appendChild(item);
+                    });
+                    positionsStatusDiv.appendChild(list);
+                }
+
+				if (busesWithTrips == 0) {
+					tripStatusDiv.innerText = "No buses have trips";
+				} else if (busesWithTrips == 3) {
+					tripStatusDiv.innerText = "All buses have trips";
+				} else {
+					tripStatusDiv.innerText = busesWithTrips + " buses with trips";
+
+					let list = document.createElement('ul');
+                    busMapData.hasTrips.forEach(bus => {
+                        let item = document.createElement('li');
+                        item.classList.add('bus-with-trip');
+                        item.innerText += bus.position.id;
+                        list.appendChild(item);
+                    });
+                    tripStatusDiv.appendChild(list);
+				}
+
+                statusMessageSection.append(positionsStatusDiv);
+				statusMessageSection.append(tripStatusDiv);
+            }
+
+
             // Only continue if there are buses that have trips
             if (busMapData.hasTrips.length > 0) {
 
@@ -137,8 +192,8 @@ function loadData(status = false) {
                                     if (elem.position.vehicle.trip.tripId == tripId) {
                                         let stopSequence = elem.position.vehicle.currentStopSequence;
                                         let matchingStopTime = dataItem.filter(elem2 => elem2.stop_sequence == stopSequence);
-                                        let routeCode = matchingStopTime[0].route_code;
-                                        elem.routeCode = routeCode;
+                                        elem.routeCode = matchingStopTime[0].route_code;
+                                        elem.destinationCode = matchingStopTime[0].destination_code;
                                     }
                                     return elem;
                                 });
@@ -172,8 +227,8 @@ function loadData(status = false) {
                                         if (elem.position.vehicle.trip.tripId == tripId) {
                                             let stopSequence = elem.prediction.stopSequence;
                                             let matchingStopTime = dataItem.filter(elem2 => elem2.stop_sequence == stopSequence);
-                                            let routeCode = matchingStopTime[0].route_code;
-                                            elem.routeCode = routeCode;
+                                            elem.routeCode = matchingStopTime[0].route_code;
+                                            elem.destinationCode = matchingStopTime[0].destination_code;
                                         }
                                         return elem;
                                     });
@@ -195,9 +250,11 @@ function loadData(status = false) {
                             /*   Add markers to map   */
                             /**************************/
 
-                            busMapData.hasTrips.forEach(elem => {
-                                Map.addMarker(elem);
-                            });
+                            if (!status) {
+                                busMapData.hasTrips.forEach(elem => {
+                                    Map.addMarker(elem);
+                                });
+                            }
                         });
                     });
                 } else if (movingFetchCalls.length > 0) {
@@ -210,15 +267,15 @@ function loadData(status = false) {
                     .then(data => {
                         data.forEach((dataItem, i) => {
                             if (i % 2 == 0) {
-                                // STOP_TIMES - get route_code
+                                // STOP_TIMES - get route_code, destination_code
                                 let tripId = dataItem[0].trip_id;
     
                                 busMapData.hasTrips = busMapData.hasTrips.map(elem => {
                                     if (elem.position.vehicle.trip.tripId == tripId) {
                                         let stopSequence = elem.prediction.stopSequence;
                                         let matchingStopTime = dataItem.filter(elem2 => elem2.stop_sequence == stopSequence);
-                                        let routeCode = matchingStopTime[0].route_code;
-                                        elem.routeCode = routeCode;
+                                        elem.routeCode = matchingStopTime[0].route_code;
+                                        elem.destinationCode = matchingStopTime[0].destination_code;
                                     }
                                     return elem;
                                 });
@@ -249,114 +306,6 @@ function loadData(status = false) {
             } else {
                 console.log('No calls made because no buses with trips were found.');
             }
-
-			// // remove buses where there is no trip data
-			// let artBusPositionsWithTrips = artBusPositions.filter(bus => bus.vehicle.trip != null);
-			// console.log(artBusPositionsWithTrips.length + ' vehicles with trips associated');
-
-            // if (status) {
-            //     let positionsStatusDiv = document.createElement('div');
-			// 	let tripStatusDiv = document.createElement('div');
-
-            //     if (artBusPositions.length == 0) {
-            //         positionsStatusDiv.innerText = "No buses running";
-            //     } else if (artBusPositions.length == 3) {
-            //         positionsStatusDiv.innerText = "All buses running";
-            //     } else {
-            //         positionsStatusDiv.innerText = "Some buses running";
-                    
-            //         let list = document.createElement('ul');
-            //         artBusPositions.forEach(bus => {
-            //             let item = document.createElement('li');
-            //             item.innerText += bus.id;
-            //             list.appendChild(item);
-            //         });
-            //         positionsStatusDiv.appendChild(list);
-            //     }
-
-			// 	if (artBusPositionsWithTrips == 0) {
-			// 		tripStatusDiv.innerText = "No buses have trips";
-			// 	} else if (artBusPositionsWithTrips == 3) {
-			// 		tripStatusDiv.innerText = "All buses have trips";
-			// 	} else {
-			// 		tripStatusDiv.innerText = artBusPositionsWithTrips.length + " buses with trips";
-
-			// 		let list = document.createElement('ul');
-            //         artBusPositionsWithTrips.forEach(bus => {
-            //             let item = document.createElement('li');
-            //             item.innerText += bus.id;
-            //             list.appendChild(item);
-            //         });
-            //         tripStatusDiv.appendChild(list);
-			// 	}
-
-            //     statusMessageSection.append(positionsStatusDiv);
-			// 	statusMessageSection.append(tripStatusDiv);
-            // }
-
-            // let busInfoArray = [];
-            // let moreBusData = [];
-            
-            // // for each bus, get GTFS static data from stop_times.txt and stops.txt
-            // artBusPositions.forEach(bus => {
-            //     let busInfo = {};
-                
-            //     busInfo.tripId = bus.vehicle.trip.tripId;
-            //     busInfo.stopSequence = bus.vehicle.currentStopSequence;
-            //     busInfo.stopId = bus.vehicle.stopId;
-            //     busInfo.position = bus.vehicle.position;
-            //     busInfo.vehicleId = bus.id;
-
-            //     let tripUpdate = tripUpdatesData.entity.filter(trip => trip.id.includes(busInfo.tripId));
-            //     let prediction = tripUpdate[0].tripUpdate.stopTimeUpdate.filter(stop => stop.stopSequence == busInfo.stopSequence);
-
-            //     // prediction might be empty array if stopSequence is not in tripUpdate (possibly tied to currentStatus = STOPPED_AT)
-            //     // even if stopSequence is found, the stop may have a scheduleRelationship = SKIPPED and thus not have a usable prediction.
-
-            //     console.log(prediction);
-
-            //     if (prediction[0].hasOwnProperty('arrival')) {
-            //         busInfo.arrivalTime = prediction[0].arrival.time;
-            //     } else {
-            //         busInfo.departureTime = prediction[0].departure.time;
-            //     }
-
-            //     busInfoArray.push(busInfo);
-
-            //     moreBusData.push(fetch(STOP_TIMES_ENDPOINT + busInfo.tripId));
-            //     moreBusData.push(fetch(STOPS_ENDPOINT + busInfo.stopId));
-            // });
-
-            // Promise.all(moreBusData)
-            // .then(responses => Promise.all(responses.map(response => response.json())))
-            // .then(data => {
-            //     data.forEach((dataItem, i) => {
-            //         if (i % 2 == 0) {
-            //             busInfoArray = busInfoArray.map(bus => {
-            //                 dataItem.forEach(stop_time => {
-            //                     if (stop_time.trip_id ) {
-
-            //                     }
-            //                 });
-            //             });
-                        
-            //             let tripStop = dataItem.filter(stop_time => stop_time.stop_sequence == busInfo.stopSequence);
-            //             busInfoArray = busInfoArray.map(bus => {
-            //                 if (bus.tripId == tripStop.tripId && bus.stopId == tripStop.stopId) {
-            //                     bus.routeCode = tripStop.route_code;
-            //                     bus.destinationCode = tripStop.destination_code;
-            //                 }
-            //             });
-            //         } else {
-                        
-            //         }
-            //     });
-                
-            //     // busInfo.stopName = data[1][0].stop_name;
-            //     // busInfo.stopLat = data[1][0].stop_lat;
-            //     // busInfo.stopLon = data[1][0].stop_lon;
-            //     // busInfoArray.push(busInfo);
-            // });
 		}
 	}).catch(error => {
         console.log(error);

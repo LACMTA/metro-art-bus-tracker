@@ -34,16 +34,16 @@ function addBusMarker(bus) {
 
     if (bus.hasOwnProperty('prediction') && bus.prediction.hasOwnProperty('arrival')) {
         let timestamp = new Date(bus.prediction.arrival.time * 1000);
-        statusMessage = ' is arriving at ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});;
+        statusMessage = ' is arriving at ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});
     } else if (bus.hasOwnProperty('prediction') && bus.prediction.hasOwnProperty('departure')) {
         let timestamp = new Date(bus.prediction.departure.time * 1000);
-        statusMessage = ' is departing ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});;
+        statusMessage = ' is departing ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});
     } else {
         let timestamp = new Date(bus.position.vehicle.timestamp * 1000);
-        statusMessage = ' is stopped at ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});;
+        statusMessage = ' is stopped at ' + stop + ' (' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'}) + ')';
     }
 
-    message = "Line " + route + statusMessage;
+    message = "Line " + route + " headed towards <span class='destination'>" + bus.destinationCode + "</span> " + statusMessage;
 
     let marker = L.marker(L.latLng(position.latitude, position.longitude), {icon: icon});
     let marker_popup = L.popup().setContent(message);
