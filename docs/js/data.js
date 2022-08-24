@@ -284,11 +284,10 @@ function loadData(status = false, statusData = false) {
                             /*   Add markers to map   */
                             /**************************/
 
-                            if (!status) {
-                                busMapData.hasTrips.forEach(elem => {
-                                    Map.addMarker(elem);
-                                });
-                            }
+                            busMapData.hasTrips.forEach(elem => {
+                                Map.addMarker(elem);
+                            });
+                            console.log('Done loading');
                         });
                     });
                 } else if (movingFetchCalls.length > 0) {
@@ -334,7 +333,10 @@ function loadData(status = false, statusData = false) {
                         busMapData.hasTrips.forEach(elem => {
                             Map.addMarker(elem);
                         });
+                        console.log('Done loading');
                     });
+                } else {
+                    console.log('Done loading (no buses with trips)');
                 }
                     
             } else {
