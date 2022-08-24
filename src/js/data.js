@@ -13,12 +13,13 @@ let busMapData = {
     noTrips: []
 };
 
-function loadData(status = false) {
+function loadData(status = false, statusData = false) {
+
     let statusMessageSection;
 
     if (status) {
         statusMessageSection = document.querySelector('#status');
-    } else {
+    } else if (!statusData) {
         Map.create('map');
     }
 
@@ -45,9 +46,11 @@ function loadData(status = false) {
             }
 			throw new Error('TripUpdates feed error');
 		} else {
+
             /**********************/
             /*   FEEDS ARE OKAY   */
             /**********************/
+
             if (status) {
                 let statusMessageDiv = document.createElement('div');
                 statusMessageDiv.innerText = 'VehiclePostions feed and TripUpdates feed successfully loaded.';
@@ -87,9 +90,41 @@ function loadData(status = false) {
                 }
             });
 
+            /**************************/
+            /*   CREATE STATUS DATA   */
+            /**************************/
+
+            if (statusData) {
+                let body = document.querySelector('body');
+                let content = "{hasTrips:[";
+                
+                busMapData.hasTrips.forEach(elem => {
+                    content += "'" + elem.position.id + "',";
+                });
+
+                if (content[content.length-1] == ',') {
+                    content = content.substring(0,content.length - 1);
+                }
+
+                content += "],noTrips:[";
+                busMapData.noTrips.forEach(elem => {
+                    content += "'" + elem.position.id + "',";
+                });
+                
+                if (content[content.length-1] == ',') {
+                    content = content.substring(0,content.length - 1);
+                }
+
+                content += "]}";
+
+                body.innerText = content;
+                return;
+            }
+
             /**********************************/
             /*   CREATE STATUS PAGE CONTENT   */
             /**********************************/
+
             if (status) {
                 let positionsStatusDiv = document.createElement('div');
 				let tripStatusDiv = document.createElement('div');
@@ -141,9 +176,8 @@ function loadData(status = false) {
 				statusMessageSection.append(tripStatusDiv);
             }
 
-
             // Only continue if there are buses that have trips
-            if (busMapData.hasTrips.length > 0) {
+            if (!status || busMapData.hasTrips.length > 0) {
 
                 /*******************************/
                 /*   MATCH TRIP UPDATES DATA   */
