@@ -13,10 +13,17 @@ const icon = L.icon({
     });
 
 function createMap(id) {
+    let viewCoords = [33.97, -118.365];
+    let maxBounds = L.latLngBounds(
+        L.latLng(34.9815, -117.1395), //northeast map corner
+        L.latLng(33.638, -119.1851) //southwest map corner
+    );
+
     map = L.map(id, {
+        maxBounds: maxBounds,
         maxZoom: 16,
         minZoom: 10
-    }).setView([33.97, -118.365], 11);
+    }).setView(viewCoords, 11);
 
     L.esri.tiledMapLayer({url: rasterBaseMap}).addTo(map);
     layerGroup = L.featureGroup().addTo(map);
