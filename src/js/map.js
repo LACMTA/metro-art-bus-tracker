@@ -1,14 +1,15 @@
 const rasterBaseMap = 'https://tiles.arcgis.com/tiles/TNoJFjk1LsD45Juj/arcgis/rest/services/Map4_NoTransit/MapServer';
-const art_bus_icon = 'bus.png';
+const art_bus_icon = 'bus-icon-m-a-b.png';
 
 let firstLoad = true;
 let layerGroup;
 let map;
 
 // Art Bus iconSize: [72, 20]
+// 8 / 5  *25
 const icon = L.icon({
     iconUrl: "images/" + art_bus_icon,
-    iconSize: [50, 50]
+    iconSize: [200, 90]
     });
 
 function createMap(id) {
