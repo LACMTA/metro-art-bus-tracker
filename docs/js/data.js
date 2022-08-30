@@ -96,26 +96,26 @@ function loadData(status = false, statusData = false) {
 
             if (statusData) {
                 let body = document.querySelector('body');
-                let content = "{";
+                let content = '{';
 
-                content += "'summary':{'status':'";
+                content += '"summary":{"status":';
 
                 if (busMapData.hasTrips.length == 3) {
-                    content += 'all buses running';
+                    content += '"all buses running"';
                 } else if (busMapData.hasTrips.length == 0) {
-                    content += 'no buses running';
+                    content += '"no buses running"';
                 } else {
-                    content += 'some buses running';
+                    content += '"some buses running"';
                 }
 
-                content += "'},'details':{";
+                content += '},"details":{';
                 
                 busMapData.hasTrips.forEach(elem => {
-                    content += "'" + elem.position.id + "':{'status':'trips'},";
+                    content += '"' + elem.position.id + '":{"status":"trips"},';
                 });
 
                 busMapData.noTrips.forEach(elem => {
-                    content += "'" + elem.position.id + "':{'status':'no trips'},";
+                    content += '"' + elem.position.id + '":{"status":"no trips"},';
                 });
 
                 if (content[content.length-1] == ',') {
@@ -123,7 +123,7 @@ function loadData(status = false, statusData = false) {
                 }
 
 
-                content += "}}";
+                content += '}}';
 
                 body.innerText = content;
                 return;
