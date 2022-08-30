@@ -24,8 +24,8 @@ function loadData(status = false, statusData = false) {
     }
 
 	Promise.all([
-		fetch(VEHICLE_POSITIONS_ENDPOINT, { method: "GET", headers: { 'Content-Type': 'application/json',}}),
-		fetch(TRIP_UPDATES_ENDPOINT, { method: "GET", headers: { 'Content-Type': 'application/json',}})])
+		fetch(VEHICLE_POSITIONS_ENDPOINT, { method: "GET", headers: { 'Content-Type': 'application/json','mode': 'no-cors'}}),
+		fetch(TRIP_UPDATES_ENDPOINT, { method: "GET",headers: { 'Content-Type': 'application/json', 'mode': 'no-cors'}})])
     .then(responses => Promise.all(responses.map(response => response.json())))
     .then(data => {
 		let vehiclePositionsData = data[0];
@@ -96,26 +96,34 @@ function loadData(status = false, statusData = false) {
 
             if (statusData) {
                 let body = document.querySelector('body');
-                let content = "{hasTrips:[";
+                let content = "{";
+
+                content += "'summary':{'status':'";
+
+                if (busMapData.hasTrips.length == 3) {
+                    content += 'all buses running';
+                } else if (busMapData.hasTrips.length == 0) {
+                    content += 'no buses running';
+                } else {
+                    content += 'some buses running';
+                }
+
+                content += "'},'details':{";
                 
                 busMapData.hasTrips.forEach(elem => {
-                    content += "'" + elem.position.id + "',";
+                    content += "'" + elem.position.id + "':{'status':'trips'},";
                 });
 
-                if (content[content.length-1] == ',') {
-                    content = content.substring(0,content.length - 1);
-                }
-
-                content += "],noTrips:[";
                 busMapData.noTrips.forEach(elem => {
-                    content += "'" + elem.position.id + "',";
+                    content += "'" + elem.position.id + "':{'status':'no trips'},";
                 });
-                
+
                 if (content[content.length-1] == ',') {
                     content = content.substring(0,content.length - 1);
                 }
 
-                content += "]}";
+
+                content += "}}";
 
                 body.innerText = content;
                 return;
