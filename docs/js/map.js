@@ -1,5 +1,6 @@
 const rasterBaseMap = 'https://tiles.arcgis.com/tiles/TNoJFjk1LsD45Juj/arcgis/rest/services/Map4_NoTransit/MapServer';
-const art_bus_icon = 'bus-icon-m-a-b.png';
+const artBusIcon = 'bus-icon-m-a-b.png';
+const artBusIconSize = [200, 90];
 
 let firstLoad = true;
 let layerGroup;
@@ -7,22 +8,30 @@ let map;
 
 // Art Bus iconSize: [72, 20]
 // 8 / 5  *25
-const icon = L.icon({
-    iconUrl: "images/" + art_bus_icon,
-    iconSize: [200, 90]
-    });
 
 function createMap(id) {
+    let viewCoords = [33.97, -118.365];
+    let maxBounds = L.latLngBounds(
+        L.latLng(34.9815, -117.1395), //northeast map corner
+        L.latLng(33.638, -119.1851) //southwest map corner
+    );
+
     map = L.map(id, {
+        maxBounds: maxBounds,
         maxZoom: 16,
         minZoom: 10
-    }).setView([33.97, -118.365], 11);
+    }).setView(viewCoords, 11);
 
     L.esri.tiledMapLayer({url: rasterBaseMap}).addTo(map);
     layerGroup = L.featureGroup().addTo(map);
 }
 
 function addBusMarker(bus) {
+    let icon = L.icon({
+        iconUrl: "images/" + artBusIcon,
+        iconSize: artBusIconSize
+        });
+
     console.log("Adding marker for:");
     console.log(bus);
     
