@@ -65,10 +65,8 @@ function addBusMarker(busData) {
             return;
         }
 
-        // let fullMessage = "Line " + route + " headed towards <span class='destination'>" + busData.destinationCode + "</span> " + statusMessage;
+        let fullMessage = "Line " + route + " headed towards <span class='destination'>" + busData.destination_code + "</span> " + statusMessage;
 
-        let fullMessage = "Line " + route + statusMessage;
-        
         let marker = L.marker(L.latLng(position.latitude, position.longitude), {icon: icon});
         let marker_popup = L.popup().setContent(fullMessage);
 
