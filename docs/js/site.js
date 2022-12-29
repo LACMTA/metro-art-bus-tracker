@@ -1,3 +1,3 @@
-import * as ArtBusData from './data.js';
+import * as ArtBusData from './data2.js';
 
-ArtBusData.load();
+ArtBusData.loadData();

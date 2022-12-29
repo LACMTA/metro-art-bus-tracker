@@ -1,10 +1,13 @@
 import * as Map from './map.js';
 
 const API_URL = 'https://api.metro.net/';
-const VEHICLE_POSITIONS_ENDPOINT = API_URL + 'vehicle_positions/bus?output_format=json';
-const TRIP_UPDATES_ENDPOINT = API_URL + 'trip_updates/bus?output_format=json';
-const STOP_TIMES_ENDPOINT = API_URL + 'bus/stop_times/';
-const STOPS_ENDPOINT = API_URL + 'bus/stops/';
+const AGENCY_ID = 'LACMTA';
+const STOP_TIMES_ENDPOINT = API_URL + AGENCY_ID + '/stop_times/';
+const STOPS_ENDPOINT = API_URL + AGENCY_ID + '/stops/';
+const VEHICLE_POSITIONS_BY_VEHICLE_ID = API_URL + AGENCY_ID + '/vehicle_positions/';
+const TRIP_UPDATES_BY_TRIP_ID = API_URL + AGENCY_ID + '/trip_updates/';
+
+const TRIP_DETAIL_ENDPOINT = API_URL + AGENCY_ID + '/trip_detail/';
 
 const artBusIds = ['3944', '4111', '5621'];
 
@@ -12,6 +15,23 @@ let busMapData = {
     hasTrips: [],
     noTrips: []
 };
+ 
+let busData = {
+    '3944': {
+        vehicle_position: null,
+        trip_update: null
+    },
+    '4111': {
+        vehicle_position: null,
+        trip_update: null
+    },
+    '5621': {
+        vehicle_position: null,
+        trip_update: null
+    }
+};
+
+const busDataKeys = Object.keys(busData);
 
 function loadData(status = false, statusData = false) {
 
@@ -23,15 +43,132 @@ function loadData(status = false, statusData = false) {
         Map.create('map');
     }
 
-	Promise.all([
-		fetch(VEHICLE_POSITIONS_ENDPOINT, { method: "GET", headers: { 'Content-Type': 'application/json','mode': 'no-cors'}}),
-		fetch(TRIP_UPDATES_ENDPOINT, { method: "GET",headers: { 'Content-Type': 'application/json', 'mode': 'no-cors'}})])
-    .then(responses => Promise.all(responses.map(response => response.json())))
-    .then(data => {
-		let vehiclePositionsData = data[0];
-		let tripUpdatesData = data[1];
+/************************************/
+/*      Fetch VehiclePositions      */
+/************************************/
 
-		if (!vehiclePositionsData.hasOwnProperty('entity') || vehiclePositionsData.entity.length <= 0) {
+    let fetch_positions = [
+        fetch(TRIP_DETAIL_ENDPOINT + artBusIds[0], { method: "GET", headers: { 'Content-Type': 'application/json', 'mode': 'no-cors'}}),
+        fetch(TRIP_DETAIL_ENDPOINT + artBusIds[1], { method: "GET", headers: { 'Content-Type': 'application/json', 'mode': 'no-cors'}}),
+        fetch(TRIP_DETAIL_ENDPOINT + artBusIds[2], { method: "GET", headers: { 'Content-Type': 'application/json', 'mode': 'no-cors'}})
+    ];
+
+    // let fetch_positions = [
+    //     fetch(VEHICLE_POSITIONS_BY_VEHICLE_ID + 'vehicle_id/' + artBusIds[0], { method: "GET", headers: { 'Content-Type': 'application/json', 'mode': 'no-cors'}}),
+    //     fetch(VEHICLE_POSITIONS_BY_VEHICLE_ID + 'vehicle_id/' + artBusIds[1], { method: "GET", headers: { 'Content-Type': 'application/json', 'mode': 'no-cors'}}),
+    //     fetch(VEHICLE_POSITIONS_BY_VEHICLE_ID + 'vehicle_id/' + artBusIds[2], { method: "GET", headers: { 'Content-Type': 'application/json', 'mode': 'no-cors'}})
+    // ];
+
+	Promise.all(fetch_positions)
+    .then(responses => Promise.all(responses.map(response => response.json())))
+    .then(vehicle_data => {
+
+        let fetch_trips = [];
+        vehicle_data.forEach(elem => {
+            if (elem.length > 0) {
+                let vehicle_position = elem[0];
+
+                if (vehicle_position.hasOwnProperty('vehicle')) {
+                    if (vehicle_position.vehicle.hasOwnProperty('vehicle_id')) {
+                        console.log('VehiclePosition matched for bus ' + vehicle_position.vehicle.vehicle_id)
+                        busData[vehicle_position.vehicle.vehicle_id].vehicle_position = vehicle_position;
+                    }
+                }
+                if (vehicle_position.hasOwnProperty('trip')) {
+                    if (vehicle_position.trip.hasOwnProperty('trip_id')) {
+                        let fetch_url = TRIP_UPDATES_BY_TRIP_ID + 'trip_id/' + vehicle_position.trip.trip_id;
+                        fetch_trips.push(fetch(fetch_url, { method: "GET", headers: { 'Content-Type': 'application/json', 'mode': 'no-cors'}}));
+                    }       
+                }
+            }
+        });
+
+/************************************/
+/*         Fetch TripUpdates        */
+/************************************/
+
+        Promise.all(fetch_trips)
+        .then(responses => Promise.all(responses.map(response => response.json())))
+        .then(trip_data => {
+            trip_data.forEach(elem => {
+                if (elem.length > 0) {
+                    let trip_update = elem[0];
+
+                    busDataKeys.forEach((key) => {
+                        if (busData[key].vehicle_position != null) {
+                            if (busData[key].vehicle_position.trip.trip_id == trip_update.id) {
+                                busData[key].trip_update = trip_update;
+                                console.log('tripUpdate matched for bus ' + key);
+                            }
+                        }
+                    }, this);
+                }
+            }, this);
+
+/************************************/
+/*         Fetch Static Data        */
+/************************************/
+
+            let fetchStaticData = [];
+            let fetchStoppedVehicleData = [];
+            let fetchMovingVehicleData = [];
+
+            console.log('busDataKeys: ' + busDataKeys);
+            busDataKeys.forEach((key) => {
+                if (busData[key].vehicle_position != null) {
+                    let stop_endpoint = STOPS_ENDPOINT + busData[key].vehicle_position.stop_id;
+                    let stop_time_endpoint = STOP_TIMES_ENDPOINT + busData[key].vehicle_position.trip.trip_id;
+
+                    if (busData[key].vehicle_position.current_status == "STOPPED_AT") { /* Vehicle is stopped */
+                        console.log(key + ' is stopped at ' + busData[key].vehicle_position.stop_id);
+                        fetchStaticData.push(fetch(stop_time_endpoint));
+                        fetchStaticData.push(fetch(stop_endpoint));
+                    } else { /* moving */
+                        console.log(key + ' is moving towards ' + busData[key].vehicle_position.stop_id);
+
+                        if (busData[key].vehicle_position.trip != null) {
+                            fetchStaticData.push(fetch(stop_time_endpoint));
+                        } else {
+                            console.log(key + ' has no trip assigned');
+                        }
+
+                        if (busData[key].vehicle_position.stop_id != null) {
+                            fetchStaticData.push(fetch(stop_endpoint));
+                        } else {
+                            console.log(key + ' has no upcoming stop assigned')
+                        }
+                    }
+                } else {
+                    console.log(key + ' has no vehicle_position');
+                }
+            }, this);
+
+            Promise.all(fetchStaticData)
+            .then(responses => Promise.all(responses.map(response => response.json())))
+            .then(static_data => {
+                console.log(static_data);
+            }, this);
+
+/*             busMapData.hasTrips.forEach(elem => {
+                if (elem.stopped) {
+                    fetchStoppedVehicles.push(fetch(STOP_TIMES_ENDPOINT + elem.position.vehicle.trip.tripId));
+                    fetchStoppedVehicles.push(fetch(STOPS_ENDPOINT + elem.position.vehicle.stopId));
+                } else {
+                    fetchMovingVehicles.push(fetch(STOP_TIMES_ENDPOINT + elem.position.vehicle.trip.tripId));
+                    fetchMovingVehicles.push(fetch(STOPS_ENDPOINT + elem.prediction.stopId));
+                }                
+            }); */
+
+        });
+    
+        /*
+        *   How to check for feed issues?
+        */
+        /*****************************/
+        /*   CHECK FOR FEED ISSUES   */
+        /*****************************/
+
+/* 		if (!vehiclePositionsData.hasOwnProperty('entity') || vehiclePositionsData.entity.length <= 0) {
             if (status) {
                 let statusMessageDiv = document.createElement('div');
                 statusMessageDiv.innerText = 'Problem with VehiclePostions feed.';
@@ -45,40 +182,40 @@ function loadData(status = false, statusData = false) {
                 statusMessageSection.appendChild(statusMessageDiv);
             }
 			throw new Error('TripUpdates feed error');
-		} else {
+		} else { */
 
             /**********************/
             /*   FEEDS ARE OKAY   */
             /**********************/
 
-            if (status) {
+/*             if (status) {
                 let statusMessageDiv = document.createElement('div');
                 statusMessageDiv.innerText = 'VehiclePostions feed and TripUpdates feed successfully loaded.';
                 statusMessageSection.appendChild(statusMessageDiv);
             }
-			console.log('VehiclePositions and TripUpdates feeds both returning data');
+			console.log('VehiclePositions and TripUpdates feeds both returning data'); */
 
 			/************************************/
             /*   MATCH VEHICLE POSITIONS DATA   */
             /************************************/
 
-            let artBusPositions = getArtBusPositions(vehiclePositionsData);
-			console.log(artBusPositions.length + ' vehicle positions found');
+/*             let artBusPositions = getArtBusPositions(vehiclePositionsData);
+			console.log(artBusPositions.length + ' vehicle positions found'); */
 
 			/***************************/
             /*   SEPARATE INTO TYPES   */
             /***************************/
 
-            artBusPositions.forEach(elem => {
+/*             vehiclePositions.forEach(elem => {
                 let wrappedElem = {
                     position: elem
                 };
 
-                if (!elem.vehicle.hasOwnProperty('trip')) {
+                if (!elem.vehicle.hasOwnProperty('trip_id')) {
                     busMapData.noTrips.push(wrappedElem);
-                    console.log(elem.id + " has no trip");
+                    console.log(elem.vehicle_id + " has no trip");
                 } else {
-                    if (elem.vehicle.currentStatus == 'STOPPED_AT') {
+                    if (elem.vehicle.current_status == 'STOPPED_AT') {
                         wrappedElem.stopped = true;
                         busMapData.hasTrips.push(wrappedElem);
                         console.log(elem.id + " is stopped");
@@ -88,13 +225,13 @@ function loadData(status = false, statusData = false) {
                         console.log(elem.id + " is moving");
                     }
                 }
-            });
+            }); */
 
             /**************************/
             /*   CREATE STATUS DATA   */
             /**************************/
 
-            if (statusData) {
+/*             if (statusData) {
                 let body = document.querySelector('body');
                 let content = '{';
 
@@ -127,13 +264,13 @@ function loadData(status = false, statusData = false) {
 
                 body.innerText = content;
                 return;
-            }
+            } */
 
             /**********************************/
             /*   CREATE STATUS PAGE CONTENT   */
             /**********************************/
 
-            if (status) {
+/*             if (status) {
                 let positionsStatusDiv = document.createElement('div');
 				let tripStatusDiv = document.createElement('div');
 
@@ -182,7 +319,7 @@ function loadData(status = false, statusData = false) {
 
                 statusMessageSection.append(positionsStatusDiv);
 				statusMessageSection.append(tripStatusDiv);
-            }
+            } */
 
             // Only continue if there are buses that have trips
             if (!status || busMapData.hasTrips.length > 0) {
@@ -209,7 +346,7 @@ function loadData(status = false, statusData = false) {
     
                 busMapData.hasTrips.forEach(elem => {
                     if (elem.stopped) {
-                        stoppedFetchCalls.push(fetch(STOP_TIMES_ENDPOINT + elem.position.vehicle.trip.tripId));
+                        stoppedFetchCalls.push(fetch(STOP_TIMES_ENDPOINT + 'trip_id/' + elem.position.vehicle.trip.tripId));
                         stoppedFetchCalls.push(fetch(STOPS_ENDPOINT + elem.position.vehicle.stopId));
                     } else {
                         movingFetchCalls.push(fetch(STOP_TIMES_ENDPOINT + elem.position.vehicle.trip.tripId));
@@ -350,7 +487,7 @@ function loadData(status = false, statusData = false) {
             } else {
                 console.log('No calls made because no buses with trips were found.');
             }
-		}
+		// }
 	}).catch(error => {
         console.log(error);
         if (status) {

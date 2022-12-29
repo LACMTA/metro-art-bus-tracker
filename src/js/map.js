@@ -26,46 +26,57 @@ function createMap(id) {
     layerGroup = L.featureGroup().addTo(map);
 }
 
-function addBusMarker(bus) {
+function addBusMarker(busData) {
     let icon = L.icon({
         iconUrl: "images/" + artBusIcon,
         iconSize: artBusIconSize
         });
 
-    console.log("Adding marker for:");
-    console.log(bus);
-    
-    let route = bus.routeCode;
-    let stop = bus.stopName;
-    let position = bus.position.vehicle.position;
-    let statusMessage = '';
-
-    let message = '';
-
-    if (bus.hasOwnProperty('prediction') && bus.prediction.hasOwnProperty('arrival')) {
-        let timestamp = new Date(bus.prediction.arrival.time * 1000);
-        statusMessage = ' is arriving at ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});
-    } else if (bus.hasOwnProperty('prediction') && bus.prediction.hasOwnProperty('departure')) {
-        let timestamp = new Date(bus.prediction.departure.time * 1000);
-        statusMessage = ' is departing ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});
+    if (busData.hasOwnProperty('message')) {
+        console.log(busData.message);
+        return;
+    } else if (busData.upcoming_stop_time_update == null) {
+        console.log('vehicle_id ' + busData.vehicle_label + ' has no upcoming predictions.');
+        return;
     } else {
-        let timestamp = new Date(bus.position.vehicle.timestamp * 1000);
-        statusMessage = ' is stopped at ' + stop + ' (' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'}) + ')';
-    }
+        console.log("Adding marker for: " + busData.vehicle_label);
 
-    message = "Line " + route + " headed towards <span class='destination'>" + bus.destinationCode + "</span> " + statusMessage;
+        let route = busData.route_code;
+        let stop = busData.stop_name;
+        let position = busData.position;
+        
+        let predictionTime = '';
+        let timestamp = '';
+        let statusMessage = '';
 
-    let marker = L.marker(L.latLng(position.latitude, position.longitude), {icon: icon});
-    let marker_popup = L.popup().setContent(message);
+        if (busData.upcoming_stop_time_update.departure != null) {
+            predictionTime = busData.upcoming_stop_time_update.departure;
 
-    marker.bindPopup(marker_popup);
-    layerGroup.addLayer(marker);
+            timestamp = new Date(predictionTime * 1000);
 
-    if (layerGroup.getLayers().length > 0) {
-       	map.fitBounds(layerGroup.getBounds());
-        // let zoom = map.getZoom();
-        // console.log(zoom);
-        // map.setZoom(zoom - 1);
+            statusMessage = ' is departing ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});
+        } else if (busData.upcoming_stop_time_update.arrival != null) {
+            predictionTime = busData.upcoming_stop_time_update.arrival;
+
+            timestamp = new Date(predictionTime * 1000);
+
+            statusMessage = ' is arriving at ' + stop + ' at ' + timestamp.toLocaleTimeString([], {hour12: true, hour: 'numeric', minute: '2-digit'});
+        } else {
+            return;
+        }
+
+        let fullMessage = "Line " + route + " headed towards <span class='destination'>" + busData.destination_code + "</span> " + statusMessage;
+
+        let marker = L.marker(L.latLng(position.latitude, position.longitude), {icon: icon});
+        let marker_popup = L.popup().setContent(fullMessage);
+
+        marker.bindPopup(marker_popup);
+        layerGroup.addLayer(marker);
+
+        if (layerGroup.getLayers().length > 0) {
+            map.fitBounds(layerGroup.getBounds());
+        }
+        return;
     }
 }
 
@@ -79,5 +90,5 @@ function clearMarkers(map) {
 
 export {
     createMap as create,
-    addBusMarker as addMarker
+    addBusMarker as addBusMarker
 };
