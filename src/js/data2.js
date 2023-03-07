@@ -8,9 +8,9 @@ const artBusIds = ['3944', '4111', '5621'];
 
 function loadData() {
     let fetch_positions = [
-        fetch(TRIP_DETAIL_ENDPOINT + artBusIds[0] + '?geojson=false', { method: "GET", headers: { 'Content-Type': 'application/json', 'mode': 'cors', 'origin':'https://lacmta.github.io'}}),
-        fetch(TRIP_DETAIL_ENDPOINT + artBusIds[1] + '?geojson=false', { method: "GET", headers: { 'Content-Type': 'application/json', 'mode': 'cors', 'origin':'https://lacmta.github.io'}}),
-        fetch(TRIP_DETAIL_ENDPOINT + artBusIds[2] + '?geojson=false', { method: "GET", headers: { 'Content-Type': 'application/json', 'mode': 'cors', 'origin':'https://lacmta.github.io'}})
+        fetch(TRIP_DETAIL_ENDPOINT + artBusIds[0] + '?geojson=false', { method: "GET", headers: { 'Content-Type': 'application/json'}}),
+        fetch(TRIP_DETAIL_ENDPOINT + artBusIds[1] + '?geojson=false', { method: "GET", headers: { 'Content-Type': 'application/json'}}),
+        fetch(TRIP_DETAIL_ENDPOINT + artBusIds[2] + '?geojson=false', { method: "GET", headers: { 'Content-Type': 'application/json'}})
     ];
 
     Map.create('map');
